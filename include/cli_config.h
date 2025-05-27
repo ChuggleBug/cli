@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define SHELL_PROMPT "swd $ "
+extern const char *SHELL_PROMPT;
 
 #define NEWLINE "\n\r"
 

@@ -31,6 +31,9 @@ const cmd_elem_t command_mapping[] = {
 __attribute__((weak))
 const int command_mapping_size = 0; // = sizeof(command_mapping) / sizeof(cmd_elem_t)
 
+__attribute__((weak))
+const char *SHELL_PROMPT = "cli default $ ";
+
 void writeln(const char *str) {
     write_str(str, strlen(str)); write_str(NEWLINE, strlen(NEWLINE));
 }
