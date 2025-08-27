@@ -3,34 +3,55 @@
 
 #include <stdbool.h>
 #include <string.h>
+#include <stdint.h>
 
 extern const char *SHELL_PROMPT;
 
-#define NEWLINE "\n\r"
+#define NEWLINE "\n"
 
 // Maximum allowable input string when reading a command
-#define CMD_STR_BUFZ 256
+#define CMD_STR_BUFZ 1024
 
 // Maximum allowable number of arguments for a single command
 #define ARGV_MAX 64
 
-// In some systems sending a chararcter to the command line
-// automatically echos back the chararcter
-#define NEEDS_CHAR_ECHO false
+/*
+ * Two options are provided to determine how user inputs arrives
+ * for the CLI to process. Both options should be mutually exclusive
+ */
 
-// Overrideable compile time funcions
-// writing functions should flush output
-// Weak configs are provided for a *nix system
-extern void write_str(const char* str, int cnt);
-extern void write_char(char c);
-extern void write_fmt(const char *fmt, ...);
+/* A input method which transmitts data as a input steam (e.g. UART) */
+// #define CLI_TEXT_INPUT_STREAM
+/* A input method which transmitts data as data packets (e.g. TCP Packet) */
+#define CLI_TEXT_INPUT_PACKET
 
-extern bool read_ready();
-extern char read_char();
-extern void clear_read_buf();
+/*
+ * Printf-like interface
+ */
+extern void cli_printf(const char* fmt, ...);
 
-// Predefined utilities:
-// Defined inside of base_configs.c
-void writeln(const char* str);
+#ifdef CLI_TEXT_INPUT_STREAM
+/*
+ * Returns a single character for the CLI to use internally.
+ * CLI reads up to CMD_STR_BUFZ-1 characters or up until a
+ * null terminator
+ */
+extern char cli_read_char(void);
+
+#endif // CLI_TEXT_INPUT_STREAM
+
+#ifdef CLI_TEXT_INPUT_PACKET
+/*
+ * Returns a single string for the CLI to use internally.
+ * CLI copies up to CMD_STR_BUFZ-strlen(NEWLINE) characters 
+ */
+extern const char* cli_read_str(void);
+
+#endif // CLI_TEXT_INPUT_PACKET
+
+/*
+ * Flag to determine whether or not data is present
+*/
+extern bool cli_read_ready();
 
 #endif // __CLI_CONFIG_H

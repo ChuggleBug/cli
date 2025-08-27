@@ -7,6 +7,15 @@
 #include "cli_loop.h"
 #include "cli_types.h"
 
+#if !defined(CLI_TEXT_INPUT_STREAM) && !defined(CLI_TEXT_INPUT_PACKET)
+#error "At least one of CLI_TEXT_INPUT_STREAM and CLI_TEXT_INPUT_PACKET needs to be defined"
+#endif
+
+#if defined(CLI_TEXT_INPUT_STREAM) && defined(CLI_TEXT_INPUT_PACKET)
+#error "Both CLI_TEXT_INPUT_STREAM and CLI_TEXT_INPUT_PACKET are defined. Only one can be defined at a time"
+#endif
+
+
 // Because this interface (or at least should be) a single threaded
 // environment, only a single copy of these elements need to be stored
 // for the active command
@@ -17,8 +26,8 @@ static int cmd_status;
 static bool do_exit = false;
 
 static int exec_cmd(int argc, const char **argv);
-static char* readline(char *buf, int bufsz);
 static int parse_args(char *str, char **tokens);
+static void cli_readline(char *bufptr, size_t cnt);
 
 int exec_from_table(const char* cmd, const cmd_elem_t* table, int table_size, int argc, const char** argv) {
     if (argc == 0) {
@@ -33,15 +42,15 @@ int exec_from_table(const char* cmd, const cmd_elem_t* table, int table_size, in
             return table[i].command(argc, argv);
         }
     }
-    write_fmt("Command %s not found\n\r", cmd);
+    cli_printf("Command %s not found" NEWLINE, cmd);
     return -1;
 }
 
 void cli_loop(void) {
     do_exit = false;
     do {
-        write_str(SHELL_PROMPT, strlen(SHELL_PROMPT));
-        readline(cmd_str, CMD_STR_BUFZ);
+        cli_printf("%s", SHELL_PROMPT);
+        cli_readline(cmd_str, CMD_STR_BUFZ);
         int argc = parse_args(cmd_str, argv_buf);
         cmd_status = exec_cmd(argc,(const char**)argv_buf);
     } while (!do_exit);
@@ -57,7 +66,7 @@ int exec_cmd(int argc, const char **argv) {
 
     // Special case for the exit command
     if (strcmp(cmd_name, "exit") == 0) {
-        writeln("Exiting...");
+        cli_printf("Exiting..." NEWLINE);
         do_exit = true;
         return 0;
     }
@@ -67,32 +76,6 @@ int exec_cmd(int argc, const char **argv) {
 
 static inline int is_newline(char c) {
     return (c == '\n') || (c == '\r');
-}
-
-char* readline(char *buf, int bufsz){
-    while (!read_ready());
-    char c = read_char();
-    int rd_cnt = 0;
-    while (rd_cnt < bufsz - 1) {
-        if (is_newline(c)) {
-            write_str("\n\r", 2);
-            clear_read_buf();
-            break;
-        }
-        else if (c == '\b') {
-            if (rd_cnt > 0) {
-                rd_cnt--;
-                write_str("\b \b", 3);
-            }
-        } else {
-            write_char(c);
-            buf[rd_cnt++] = c;
-        }
-        while (!read_ready());
-        c = read_char();
-    }
-    buf[rd_cnt] = '\0';
-    return buf;
 }
 
 static int parse_args(char *str, char **tokens) {
@@ -118,4 +101,26 @@ static int parse_args(char *str, char **tokens) {
     }
 
     return argc_cnt;
+}
+
+static void cli_readline(char *bufptr, size_t cnt) {
+#ifdef CLI_TEXT_INPUT_PACKET  
+    while (!cli_read_ready());
+    strncpy(bufptr, cli_read_str(), cnt-1);
+#endif
+#ifdef CLI_TEXT_INPUT_STREAM
+    size_t i;
+    char c;
+    int termlen = strlen(NEWLINE);
+    for (i = 0; i < cnt - termlen; i++) {
+        while (!cli_read_ready());
+        c = cli_read_char();
+        bufptr[i] = c;
+        if (i >= (termlen - 1) && (strncmp(&(bufptr[i - termlen + 1]), NEWLINE, termlen) == 0)) {
+            bufptr[i - termlen + 1] = '\0';
+            return;
+        }
+    }
+    bufptr[i] = '\0';
+#endif
 }
