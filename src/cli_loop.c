@@ -83,7 +83,7 @@ static int parse_args(char *str, char **tokens) {
 
     while (*str) {
         // Skip leading whitespace
-        while (isspace(*str)) str++;
+        while (isspace( (int)(*str) )) str++;
 
         if (*str == '\0') break;
 
@@ -91,7 +91,7 @@ static int parse_args(char *str, char **tokens) {
         tokens[argc_cnt++] = str;
 
         // Move until next whitespace or end
-        while (*str && !isspace(*str)) str++;
+        while (*str && !isspace( (int)(*str) )) str++;
 
         // Null-terminate the token
         if (*str) {
@@ -111,12 +111,12 @@ static void cli_readline(char *bufptr, size_t cnt) {
 #ifdef CLI_TEXT_INPUT_STREAM
     size_t i;
     char c;
-    int termlen = strlen(NEWLINE);
+    int termlen = strlen(INPUT_STREAM_TERM);
     for (i = 0; i < cnt - termlen; i++) {
         while (!cli_read_ready());
         c = cli_read_char();
         bufptr[i] = c;
-        if (i >= (termlen - 1) && (strncmp(&(bufptr[i - termlen + 1]), NEWLINE, termlen) == 0)) {
+        if (i >= (termlen - 1) && (strncmp(&(bufptr[i - termlen + 1]), INPUT_STREAM_TERM, termlen) == 0)) {
             bufptr[i - termlen + 1] = '\0';
             return;
         }
