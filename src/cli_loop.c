@@ -15,6 +15,7 @@
 #error "Both CLI_TEXT_INPUT_STREAM and CLI_TEXT_INPUT_PACKET are defined. Only one can be defined at a time"
 #endif
 
+#define DELIMS " \r\n"
 
 // Because this interface (or at least should be) a single threaded
 // environment, only a single copy of these elements need to be stored
@@ -26,7 +27,20 @@ static int cmd_status;
 static bool do_exit = false;
 
 static int exec_cmd(int argc, const char **argv);
-static int parse_args(char *str, char **tokens);
+
+/*
+* @brief Parse an input string into in arg argc argv-like like interface.
+*          Sets the first argument of arg_buf to the character which is not inside
+*          the delimeter set. In addition to this, the provided string buffer is
+*          modified to so that each "word" ends with a null terminator and the reference
+*          of its starting character is stored inside of argv (in order).
+* @return int The number of arguments parsed. -1 on error
+* @note The string buffer needs to remain in scope as long as argv is intended to be used
+* 
+*/
+static int parse_args(char *str_buf, char **argv, int argv_max, const char* delims);
+
+static int strcontains(char ch, const char* charset);
 static void cli_readline(char *bufptr, size_t cnt);
 
 int exec_from_table(const char* cmd, const cmd_elem_t* table, int table_size, int argc, const char** argv) {
@@ -51,7 +65,7 @@ void cli_loop(void) {
     do {
         cli_printf("%s", SHELL_PROMPT);
         cli_readline(cmd_str, CMD_STR_BUFZ);
-        int argc = parse_args(cmd_str, argv_buf);
+        int argc = parse_args(cmd_str, argv_buf, ARGV_MAX, DELIMS);
         cmd_status = exec_cmd(argc,(const char**)argv_buf);
     } while (!do_exit);
 }
@@ -74,33 +88,60 @@ int exec_cmd(int argc, const char **argv) {
     return exec_from_table(cmd_name, command_mapping, command_mapping_size, argc, argv);
 }
 
-static inline int is_newline(char c) {
-    return (c == '\n') || (c == '\r');
+static int strcontains(char ch, const char* charset) {
+    const char *cp = charset;
+    char test;
+    while ( (test = *(cp++)) != '\0') {
+        if (ch == test) {
+            return 1;
+        }
+    } 
+    return 0;
 }
 
-static int parse_args(char *str, char **tokens) {
-    int argc_cnt = 0;
+static int parse_args(char *str_buf, char **argv, int argv_max, const char* delims) {
+    char *cptr = str_buf;
+    char *arg_start = NULL;
+    int argc = 0;
 
-    while (*str) {
-        // Skip leading whitespace
-        while (isspace( (int)(*str) )) str++;
+    if (str_buf == NULL || argv == NULL || 
+        delims == NULL || argv_max <= 0) 
+    {
+        return -1;
+    }
 
-        if (*str == '\0') break;
+    while (*cptr != '\0') {
+        // Stop parsing if no more arguments can be placed in argv
+        if (argc >= argv_max) {
+            return argv_max;
+        }
 
-        // Start of token
-        tokens[argc_cnt++] = str;
+        // Skip delimiters
+        while (strcontains(*cptr, delims)) {
+            cptr++;
+        }
+        
+        // Check if not more characters are present
+        if (*cptr == '\0') {
+            break; 
+        }
 
-        // Move until next whitespace or end
-        while (*str && !isspace( (int)(*str) )) str++;
+        arg_start = cptr;
 
-        // Null-terminate the token
-        if (*str) {
-            *str = '\0';
-            str++;
+        // Find where "word" ends (or if the null terminator is)
+        while (*cptr != '\0' && !strcontains(*cptr, delims)) {
+            cptr++;
+        }
+
+        argv[argc++] = arg_start;
+
+        // Create "word" for argv to use
+        if (*cptr != '\0') {
+            *(cptr++) = '\0';
         }
     }
 
-    return argc_cnt;
+    return argc;
 }
 
 static void cli_readline(char *bufptr, size_t cnt) {

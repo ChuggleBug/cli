@@ -21,9 +21,9 @@ extern const char *SHELL_PROMPT;
  */
 
 /* A input method which transmitts data as a input steam (e.g. UART) */
-#define CLI_TEXT_INPUT_STREAM
+// #define CLI_TEXT_INPUT_STREAM
 /* A input method which transmitts data as data packets (e.g. TCP Packet) */
-// #define CLI_TEXT_INPUT_PACKET
+#define CLI_TEXT_INPUT_PACKET
 
 /*
  * Printf-like interface
