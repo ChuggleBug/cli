@@ -6,6 +6,8 @@
 #include "cli_config.h"
 #include "cli_loop.h"
 #include "cli_types.h"
+#include "cli_io.h"
+
 
 #if !defined(CLI_TEXT_INPUT_STREAM) && !defined(CLI_TEXT_INPUT_PACKET)
 #error "At least one of CLI_TEXT_INPUT_STREAM and CLI_TEXT_INPUT_PACKET needs to be defined"
@@ -16,6 +18,14 @@
 #endif
 
 #define DELIMS " \r\n\t\v\f"
+
+__attribute__((weak))
+const char *SHELL_PROMPT = "CLI default $ ";
+
+__attribute__((weak))
+const cmd_err_elem_t command_err_table[] = {
+    {0, 0}
+};
 
 // Because this interface (or at least should be) a single threaded
 // environment, only a single copy of these elements need to be stored
@@ -97,7 +107,7 @@ int exec_cmd(int argc, const char **argv) {
         return 0;
     }
 
-    ret = exec_from_table(cmd_name, command_mapping, argc, argv);
+    ret = exec_from_table(cmd_name, command_table, argc, argv);
     if (ret != 0) {
         cli_printf("%s: ", cmd_name);
         for (const cmd_err_elem_t *current = command_err_table; current->err_no != 0 && current->err_str != 0; current++) {
