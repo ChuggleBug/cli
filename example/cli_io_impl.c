@@ -2,8 +2,10 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 #include "cli_config.h"
+#include "cli_io.h"
 
 void cli_printf(const char* fmt, ...) {
     va_list arg;
@@ -12,6 +14,8 @@ void cli_printf(const char* fmt, ...) {
     va_end(arg);
     fflush(stdout);
 }
+
+#ifdef CLI_TEXT_INPUT_PACKET
 
 char buf[256];
 const char* cli_read_str(void) {
@@ -29,11 +33,15 @@ const char* cli_read_str(void) {
     return buf;
 }
 
+#endif // CLI_TEXT_INPUT_PACKET
+
+#ifdef CLI_TEXT_INPUT_STREAM
 
 char cli_read_char(void) {
-    // pritnf("call read char\n");
     return fgetc(stdin);
 }
+
+#endif // CLI_TEXT_INPUT_STREAM
 
 /* 
  * fgetc always blocks so data will always be present when reading
