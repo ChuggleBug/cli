@@ -2,12 +2,7 @@
 #include "cli_loop.h"
 #include "cli_config.h"
 
-// Due to limitations from linking, a mapping size needs to 
-// be declared in the external file for the CLI to 
-// properly know the size
-// This is placed AFTER the mapping declaration
-
-// Basic Pattern for a command mapping goes as follows
+// Basic Pattern for a command mapping goes as follows:
 // 1. Function to be added inside of the command mapping 
 //    is declared as "extern." Alternatively, they can be 
 //    in a header file
@@ -21,15 +16,12 @@
 extern int help_command(int, char**);
 */
 
-__attribute__((weak))
+/*
 const cmd_elem_t command_mapping[] = {
-    /*
-    {"help", help_command},
-    */
+    {"help", "h", help_command},
+    {0, 0, 0}
 };
-
-__attribute__((weak))
-const int command_mapping_size = 0; // = sizeof(command_mapping) / sizeof(cmd_elem_t)
+*/
 
 __attribute__((weak))
 const char *SHELL_PROMPT = "cli default $ ";

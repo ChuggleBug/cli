@@ -10,13 +10,18 @@
 // are not required to be used when constructing the table
 typedef int (*command_t)(int, const char**);
 
-typedef struct cmd_elem_t {
+typedef struct _cmd_elem_t {
     const char *cmd_name;
     const char *alias;
     command_t command;
 } cmd_elem_t;
 
+typedef struct _cmd_err_elem_t {
+    int err_no;
+    const char* err_str;
+} cmd_err_elem_t;
+
 extern const cmd_elem_t command_mapping[];
-extern const int command_mapping_size;
+extern const cmd_err_elem_t command_err_table[];
 
 #endif // __CLI_TYPES_H

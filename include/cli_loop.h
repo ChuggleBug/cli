@@ -4,7 +4,7 @@
 #include "cli_types.h"
 
 // Main mechanism to dispatch a function from a command table
-int exec_from_table(const char* cmd, const cmd_elem_t* table, int table_size, int argc, const char** argv);
+int exec_from_table(const char* cmd, const cmd_elem_t* table, int argc, const char** argv);
 
 // Main command line entry point
 // Consists of a single builtin command

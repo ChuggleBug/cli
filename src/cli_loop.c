@@ -23,7 +23,6 @@
 static char cmd_str[CMD_STR_BUFZ];
 static char *argv_buf[ARGV_MAX];
 
-static int cmd_status;
 static bool do_exit = false;
 
 static int exec_cmd(int argc, const char **argv);
@@ -43,40 +42,53 @@ static int parse_args(char *str_buf, char **argv, int argv_max, const char* deli
 static int strcontains(char ch, const char* charset);
 static void cli_readline(char *bufptr, size_t cnt);
 
-int exec_from_table(const char* cmd, const cmd_elem_t* table, int table_size, int argc, const char** argv) {
-    if (argc == 0) {
-        return -1;
+int exec_from_table(const char* cmd, const cmd_elem_t* table, int argc, const char** argv) {
+    if (cmd == NULL) {
+        return 0;
     }
-    for (int i = 0; i < table_size; i++) {
-        if ( ( table[i].alias != NULL && (strcmp(table[i].alias, cmd) == 0) ) || 
-                strcmp(table[i].cmd_name, cmd) == 0) {
-            if (table[i].command == NULL) {
+    if (table == NULL) {
+        return 0;
+    }
+    if (argc == 0) {
+        return 0;
+    }
+    if (argv == NULL) {
+        return 0;
+    }
+    for (const cmd_elem_t *current = table; current->cmd_name != 0; current++) {
+        if ( ( current->alias != NULL && (strcmp(current->alias, cmd) == 0) ) || 
+                strcmp(current->cmd_name, cmd) == 0) {
+            if (current->command == NULL) {
                 break;
             }
-            return table[i].command(argc, argv);
+            return current->command(argc, argv);
         }
     }
-    cli_printf("Command %s not found" NEWLINE, cmd);
-    return -1;
+    cli_printf("Command not found: %s" NEWLINE, cmd);
+    return 0;
 }
 
 void cli_loop(void) {
+    int argc;
     do_exit = false;
     do {
         cli_printf("%s", SHELL_PROMPT);
         cli_readline(cmd_str, CMD_STR_BUFZ);
-        int argc = parse_args(cmd_str, argv_buf, ARGV_MAX, DELIMS);
-        cmd_status = exec_cmd(argc,(const char**)argv_buf);
+        argc = parse_args(cmd_str, argv_buf, ARGV_MAX, DELIMS);
+        exec_cmd(argc,(const char**)argv_buf);
     } while (!do_exit);
 }
 
 
 int exec_cmd(int argc, const char **argv) {
+    const char *cmd_name;
+    int ret;
+
     if (argc == 0) {
         return 0;
     } 
 
-    const char *cmd_name = argv[0];
+    cmd_name = argv[0];
 
     // Special case for the exit command
     if (strcmp(cmd_name, "exit") == 0) {
@@ -85,7 +97,18 @@ int exec_cmd(int argc, const char **argv) {
         return 0;
     }
 
-    return exec_from_table(cmd_name, command_mapping, command_mapping_size, argc, argv);
+    ret = exec_from_table(cmd_name, command_mapping, argc, argv);
+    if (ret != 0) {
+        cli_printf("%s: ", cmd_name);
+        for (const cmd_err_elem_t *current = command_err_table; current->err_no != 0 && current->err_str != 0; current++) {
+            if (current->err_no == ret) {
+                cli_printf("%s" NEWLINE, current->err_str);
+                return ret;
+            }
+        }
+        cli_printf("Unknown error %d" NEWLINE, ret);
+    }
+    return ret;
 }
 
 static int strcontains(char ch, const char* charset) {
