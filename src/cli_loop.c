@@ -15,7 +15,7 @@
 #error "Both CLI_TEXT_INPUT_STREAM and CLI_TEXT_INPUT_PACKET are defined. Only one can be defined at a time"
 #endif
 
-#define DELIMS " \r\n"
+#define DELIMS " \r\n\t\v\f"
 
 // Because this interface (or at least should be) a single threaded
 // environment, only a single copy of these elements need to be stored
