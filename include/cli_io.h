@@ -9,6 +9,7 @@
 /*
  * Printf-like interface
  */
+__attribute__((format(printf, 1, 2)))
 extern void cli_printf(const char* fmt, ...);
 
 #ifdef CLI_TEXT_INPUT_STREAM
